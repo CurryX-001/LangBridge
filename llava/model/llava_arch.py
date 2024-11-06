@@ -131,23 +131,52 @@ def unpad_image(tensor, original_size):
     return unpadded_tensor
 
 
+# class LlavaMetaForCausalLM(ABC):
+#     @abstractmethod
+#     def get_model(self):
+#         pass
+#     def get_vision_tower(self):
+#         return self.get_model().get_vision_tower()
+
+#     def encode_images(self, images):
+#         if not hasattr(self, 'mm_vocab_matrix') and getattr(self.config, 'mm_projector_type') == "mm_vocab":
+#             self.mm_vocab_matrix = torch.load(getattr(self.config, 'mm_vocab_matrix')).float()
+#             print("mm_vocab_matrix initialized in encode_images")
+
+#         image_features = self.get_model().get_vision_tower()(images)
+#         image_features = self.get_model().mm_projector(image_features)
+
+#         if getattr(self.config, 'mm_projector_type') == "mm_vocab":
+#             dtype, device = image_features.dtype, image_features.device
+#             image_features_prob = image_features.float()
+#             vit_embeds = image_features_prob @ self.mm_vocab_matrix.to(device=device)
+#             image_features = vit_embeds.to(dtype=dtype)
+
+#         return image_features
+
 class LlavaMetaForCausalLM(ABC):
+    _mm_vocab_matrix_initialized = False
+    _mm_vocab_matrix = None
 
     @abstractmethod
     def get_model(self):
         pass
-
     def get_vision_tower(self):
         return self.get_model().get_vision_tower()
 
     def encode_images(self, images):
+        if not LlavaMetaForCausalLM._mm_vocab_matrix_initialized and getattr(self.config, 'mm_projector_type') == "mm_vocab":
+            LlavaMetaForCausalLM._mm_vocab_matrix = torch.load(getattr(self.config, 'mm_vocab_matrix'))
+            print("mm_vocab_matrix initialized in encode_images")
+            LlavaMetaForCausalLM._mm_vocab_matrix_initialized = True
+
         image_features = self.get_model().get_vision_tower()(images)
         image_features = self.get_model().mm_projector(image_features)
-        if getattr(self.config, 'mm_projector_type')=="mm_vocab":
-            mm_vocab_matrix= torch.load(getattr(self.config, 'mm_vocab_matrix'))
+
+        if getattr(self.config, 'mm_projector_type') == "mm_vocab":
             dtype, device = image_features.dtype, image_features.device
             image_features_prob = image_features.float()
-            vit_embeds = image_features_prob @ mm_vocab_matrix.to(device=device).float() 
+            vit_embeds = image_features_prob @ LlavaMetaForCausalLM._mm_vocab_matrix.to(device=device)
             image_features = vit_embeds.to(dtype=dtype)
         return image_features
 
