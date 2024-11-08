@@ -584,7 +584,6 @@ def preprocess_mpt(sources, tokenizer: transformers.PreTrainedTokenizer, has_ima
     conv = conversation_lib.default_conversation.copy()
     roles = {"human": conv.roles[0], "gpt": conv.roles[1]}
 
-    # Apply prompt templates
     conversations = []
     for i, source in enumerate(sources):
         if roles[source[0]["from"]] != conv.roles[0]:
@@ -816,64 +815,29 @@ class LazySupervisedDataset(Dataset):
         return data_dict
 
 
-# @dataclass
-# class DataCollatorForSupervisedDataset(object):
-#     """Collate examples for supervised fine-tuning."""
-
-#     tokenizer: transformers.PreTrainedTokenizer
-
-#     def __call__(self, instances: Sequence[Dict]) -> Dict[str, torch.Tensor]:
-#         input_ids, labels = tuple([instance[key] for instance in instances]
-#                                   for key in ("input_ids", "labels"))
-#         input_ids = torch.nn.utils.rnn.pad_sequence(
-#             input_ids,
-#             batch_first=True,
-#             padding_value=self.tokenizer.pad_token_id)
-#         labels = torch.nn.utils.rnn.pad_sequence(labels,
-#                                                  batch_first=True,
-#                                                  padding_value=IGNORE_INDEX)
-#         input_ids = input_ids[:, :self.tokenizer.model_max_length]
-#         labels = labels[:, :self.tokenizer.model_max_length]
-#         batch = dict(
-#             input_ids=input_ids,
-#             labels=labels,
-#             attention_mask=input_ids.ne(self.tokenizer.pad_token_id),
-#         )
-
-#         if 'image' in instances[0]:
-#             images = [instance['image'] for instance in instances]
-#             if all(x is not None and x.shape == images[0].shape for x in images):
-#                 batch['images'] = torch.stack(images)
-#             else:
-#                 batch['images'] = images
-
-#         return batch
 @dataclass
 class DataCollatorForSupervisedDataset(object):
     """Collate examples for supervised fine-tuning."""
 
     tokenizer: transformers.PreTrainedTokenizer
 
-    def pad_sequence(self, input_ids, batch_first, padding_value):
-        if self.tokenizer.padding_side == "left":
-            input_ids = [torch.flip(_input_ids, [0]) for _input_ids in input_ids]
-        input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=batch_first, padding_value=padding_value)
-        if self.tokenizer.padding_side == "left":
-            input_ids = torch.flip(input_ids, [1])
-        return input_ids
-
     def __call__(self, instances: Sequence[Dict]) -> Dict[str, torch.Tensor]:
-        input_ids, labels = tuple([instance[key] for instance in instances] for key in ("input_ids", "labels"))
-        # input_ids, labels, ids = tuple([instance[key] for instance in instances] for key in ("input_ids", "labels", "id"))
-        input_ids = [_input_ids[: self.tokenizer.model_max_length] for _input_ids in input_ids]
-        labels = [_labels[: self.tokenizer.model_max_length] for _labels in labels]
-        if self.tokenizer.pad_token_id is None:
-            # self.tokenizer.pad_token_id = self.tokenizer.eos_token_id  # FIXME: this could only be triggered for llama3 model.
-            self.tokenizer.pad_token_id = 0 # This gets the best result. Don't know why.
-        input_ids = self.pad_sequence(input_ids, batch_first=True, padding_value=self.tokenizer.pad_token_id)
-        labels = self.pad_sequence(labels, batch_first=True, padding_value=IGNORE_INDEX)
-        batch = dict(input_ids=input_ids, labels=labels.long() if labels.dtype == torch.int32 else labels, attention_mask=input_ids.ne(self.tokenizer.pad_token_id))
-        # batch = dict(input_ids=input_ids, labels=labels, attention_mask=input_ids.ne(self.tokenizer.pad_token_id), ids=ids)
+        input_ids, labels = tuple([instance[key] for instance in instances]
+                                  for key in ("input_ids", "labels"))
+        input_ids = torch.nn.utils.rnn.pad_sequence(
+            input_ids,
+            batch_first=True,
+            padding_value=self.tokenizer.pad_token_id)
+        labels = torch.nn.utils.rnn.pad_sequence(labels,
+                                                 batch_first=True,
+                                                 padding_value=IGNORE_INDEX)
+        input_ids = input_ids[:, :self.tokenizer.model_max_length]
+        labels = labels[:, :self.tokenizer.model_max_length]
+        batch = dict(
+            input_ids=input_ids,
+            labels=labels,
+            attention_mask=input_ids.ne(self.tokenizer.pad_token_id),
+        )
 
         if 'image' in instances[0]:
             images = [instance['image'] for instance in instances]
@@ -882,23 +846,8 @@ class DataCollatorForSupervisedDataset(object):
             else:
                 batch['images'] = images
 
-        # if "image" in instances[0]:
-        #     images = [instance["image"] for instance in instances]
-
-        #     batch["image_sizes"] = [im[1] for im_list in images for im in im_list]
-        #     images = [im[0] for im_list in images for im in im_list]
-
-        #     # if all(x is not None and x.shape == images[0].shape for x in images):
-        #         # Image: (N, P, C, H, W)
-        #         # Video: (N, F, C, H, W)
-        #     #     batch["images"] = torch.stack(images)
-        #     # else:
-        #     batch["images"] = images
-
-        # if "prompt" in instances[0]:
-        #     batch["prompts"] = [instance["prompt"] for instance in instances]
-
         return batch
+
 
 def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
                                 data_args) -> Dict:
@@ -1057,12 +1006,8 @@ def train(attn_implementation=None):
             )
         else:
             tokenizer.pad_token = tokenizer.unk_token
-
         if model_args.version in conversation_lib.conv_templates:
             conversation_lib.default_conversation = conversation_lib.conv_templates[model_args.version]
-            print(f"Using conversation format: {conversation_lib.default_conversation.version}")
-        elif model_args.version == "llama3":
-            conversation_lib.default_conversation = conversation_lib.conv_templates["llama3"]
             print(f"Using conversation format: {conversation_lib.default_conversation.version}")
         else:
             conversation_lib.default_conversation = conversation_lib.conv_templates["vicuna_v1"]
@@ -1073,7 +1018,7 @@ def train(attn_implementation=None):
             model_args=model_args,
             fsdp=training_args.fsdp
         )
-        
+
         vision_tower = model.get_vision_tower()
         vision_tower.to(dtype=torch.bfloat16 if training_args.bf16 else torch.float16, device=training_args.device)
 
@@ -1095,6 +1040,12 @@ def train(attn_implementation=None):
             for p in model.get_model().mm_projector.parameters():
                 p.requires_grad = False
 
+        # Calculate total parameters and trainable parameters
+        total_params = sum(p.numel() for p in model.get_model().parameters())
+        trainable_params = sum(p.numel() for p in model.get_model().parameters() if p.requires_grad)
+
+        print(f"Total parameters: {total_params}")
+        print(f"Trainable parameters: {trainable_params}")
         if training_args.bits in [4, 8]:
             model.get_model().mm_projector.to(dtype=compute_dtype, device=training_args.device)
 
@@ -1103,6 +1054,7 @@ def train(attn_implementation=None):
         training_args.use_im_start_end = model_args.mm_use_im_start_end
         model.config.mm_use_im_patch_token = model_args.mm_use_im_patch_token
         model.initialize_vision_tokenizer(model_args, tokenizer=tokenizer)
+        model.config.pad_token_id = tokenizer.pad_token_id
 
     if training_args.bits in [4, 8]:
         from peft.tuners.lora import LoraLayer
