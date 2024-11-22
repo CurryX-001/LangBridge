@@ -1,18 +1,17 @@
 #!/bin/bash
-#!/bin/bash
 set -x
 
 # 添加时间戳变量
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 # 创建日志目录
-LOG_DIR="./checkpoints/llama3_8b_pretrain_1e-3"
+LOG_DIR="./checkpoints/llama3_8b_finetune_vocab_19200_use_qwen2_pretrain"
 mkdir -p ${LOG_DIR}
 # 设置日志文件路径
-LOG_FILE="${LOG_DIR}/train.log"
+LOG_FILE="${LOG_DIR}/train_${TIMESTAMP}.log"
 
 GPUS=${GPUS:-8}
-BATCH_SIZE=${BATCH_SIZE:-256}
-PER_DEVICE_BATCH_SIZE=${PER_DEVICE_BATCH_SIZE:-32}
+BATCH_SIZE=${BATCH_SIZE:-128}
+PER_DEVICE_BATCH_SIZE=${PER_DEVICE_BATCH_SIZE:-8}
 GRADIENT_ACC=$((BATCH_SIZE / PER_DEVICE_BATCH_SIZE / GPUS))
 
 # 将命令的输出重定向到日志文件
@@ -22,18 +21,21 @@ GRADIENT_ACC=$((BATCH_SIZE / PER_DEVICE_BATCH_SIZE / GPUS))
     echo "BATCH_SIZE: ${BATCH_SIZE}"
     echo "PER_DEVICE_BATCH_SIZE: ${PER_DEVICE_BATCH_SIZE}"
     echo "GRADIENT_ACC: ${GRADIENT_ACC}"
-torchrun --nnodes=1 --nproc_per_node=${GPUS} --master_addr=localhost --master_port=6105 llava/train/train_mem.py \
-    --deepspeed scripts/zero2.json \
+    
+torchrun --nnodes=1 --nproc_per_node=8 --master_addr=localhost --master_port=6105 llava/train/train_mem.py \
+    --deepspeed scripts/zero3.json \
     --model_name_or_path meta-llama/Meta-Llama-3-8B \
-    --version plain \
-    --data_path /scratch/Codebook/playground/data/pretrain/blip_laion_cc_sbu_558k.json \
-    --image_folder /scratch/Codebook/playground/data/pretrain/images \
+    --version llama3 \
+    --data_path /scratch/Codebook/playground/data/llava_v1_5_mix665k_filtered.json \
+    --image_folder /scratch/Codebook/playground/data \
     --vision_tower openai/clip-vit-large-patch14-336 \
-    --mm_projector_type mlp2x_gelu \
-    --tune_mm_mlp_adapter True \
+    --pretrain_mm_mlp_adapter /scratch/Codebook/Codebook_weight/checkpoints/Qwen2-7B-pretrain-vocab-19200/mm_projector.bin \
+    --mm_projector_type mm_vocab \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
+    --image_aspect_ratio pad \
+    --group_by_modality_length True \
     --bf16 True \
     --output_dir ${LOG_DIR} \
     --num_train_epochs 1 \
@@ -42,9 +44,9 @@ torchrun --nnodes=1 --nproc_per_node=${GPUS} --master_addr=localhost --master_po
     --gradient_accumulation_steps ${GRADIENT_ACC} \
     --evaluation_strategy "no" \
     --save_strategy "steps" \
-    --save_steps 24000 \
+    --save_steps 2000 \
     --save_total_limit 1 \
-    --learning_rate 1e-3 \
+    --learning_rate 2e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \
@@ -54,7 +56,10 @@ torchrun --nnodes=1 --nproc_per_node=${GPUS} --master_addr=localhost --master_po
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
     --lazy_preprocess True \
-    --report_to tensorboard
+    --report_to tensorboard \
+    --mm_vocab_size 19200 \
+    --mlp_hidden_size 5120 \
+    --mm_vocab_matrix "/scratch/Codebook/Meta-Llama-3-8B-Instruct_embedding_matrix_19200.pt"
 
     echo "结束训练时间: $(date)"
 } 2>&1 | tee ${LOG_FILE}

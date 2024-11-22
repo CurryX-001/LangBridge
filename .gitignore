@@ -1,0 +1,12 @@
+playground/
+playground/*
+checkpoints/
+checkpoints/*
+Codebook_weight/*
+Codebook_weight
+*.zip
+*.zip.1
+*.pt
+*.json
+*.log
+*.tar
