@@ -21,7 +21,7 @@ torchrun \
   /mnt/petrelfs/mengfanqing/LLaVA_vocab/LLaVA-main/llava/train/train_mem.py \
     --deepspeed /mnt/petrelfs/mengfanqing/LLaVA_ori_1104/LLaVA-main/scripts/zero2.json \
     --model_name_or_path /mnt/petrelfs/share_data/mfq/Qwen2-7B-Instruct \
-    --version qwen_2 \
+    --version plain \
     --data_path /mnt/petrelfs/share_data/wangwenhai/playground/data/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
     --image_folder /mnt/petrelfs/share_data/wangwenhai/playground/data/LLaVA-Pretrain/images \
     --vision_tower /mnt/petrelfs/share_data/wangwenhai/llm/clip-vit-large-patch14-336 \
