@@ -95,8 +95,8 @@ extract_if_needed() {
 [ -f "train2017.zip" ] && extract_if_needed "train2017.zip" "playground/data/coco" "COCO数据集"
 [ -f "images.zip" ] && extract_if_needed "images.zip" "playground/data/gqa" "GQA数据集"
 [ -f "train_val_images.zip" ] && extract_if_needed "train_val_images.zip" "playground/data/textvqa" "TextVQA数据集"
-[ -f "vg_part1.zip" ] && extract_if_needed "vg_part1.zip" "playground/data/vg/VG_100K" "Visual Genome部分1"
-[ -f "vg_part2.zip" ] && extract_if_needed "vg_part2.zip" "playground/data/vg/VG_100K_2" "Visual Genome部分2"
+[ -f "vg_part1.zip" ] && extract_if_needed "vg_part1.zip" "playground/data/vg/" "Visual Genome部分1"
+[ -f "vg_part2.zip" ] && extract_if_needed "vg_part2.zip" "playground/data/vg/" "Visual Genome部分2"
 
 echo "所有数据集处理完成！"
 echo "注意：OCR-VQA数据集需要手动从Google Drive下载。"
