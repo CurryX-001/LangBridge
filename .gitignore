@@ -10,3 +10,6 @@ Codebook_weight
 *.json
 *.log
 *.tar
+ACL
+ACL/*
+llava_eval_part_ab
