@@ -13,7 +13,7 @@ CHUNKS=${#GPULIST[@]}
 CKPT=$CKPT_NAME
 SPLIT="llava_gqa_testdev_balanced"
 GQADIR="./playground/data/eval/gqa/data"
-ROOT_DIR="/blob/v-jiaqiliao/Results/Codebook/eval/gqa"
+ROOT_DIR="/mnt/data/jiaqi.liao/Codebook/eval_results/gqa"
 
 # 创建日志文件路径并清除旧内容
 log_file="$ROOT_DIR/answers/$SPLIT/$CKPT/eval.log"

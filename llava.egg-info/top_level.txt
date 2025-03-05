@@ -1,3 +1,2 @@
-Codebook_weight
 build
 llava

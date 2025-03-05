@@ -11,7 +11,7 @@ CONV_MODE=$3
 
 CKPT=$CKPT_NAME
 SPLIT="llava_textvqa_val_v051_ocr"
-ROOT_DIR="/blob/v-jiaqiliao/Results/Codebook/eval/textvqa"
+ROOT_DIR="/mnt/data/jiaqi.liao/Codebook/eval_results/textvqa"
 
 # 创建日志文件路径并清除旧内容
 log_file="$ROOT_DIR/answers/$CKPT/eval.log"
@@ -29,8 +29,8 @@ for IDX in $(seq 0 $((CHUNKS-1))); do
     
     CUDA_VISIBLE_DEVICES=${GPULIST[$IDX]} python -m llava.eval.model_vqa_loader \
         --model-path $CKPT_PATH \
-        --question-file /scratch/Codebook/playground/data/eval/textvqa/llava_textvqa_val_v051_ocr.jsonl \
-        --image-folder /scratch/Codebook/playground/data/eval/textvqa/train_images \
+        --question-file /mnt/data/jiaqi.liao/Codebook/playground/data/eval/textvqa/llava_textvqa_val_v051_ocr.jsonl \
+        --image-folder /mnt/data/jiaqi.liao/Codebook/playground/data/eval/textvqa/train_images \
         --answers-file $ROOT_DIR/answers/$CKPT/${CHUNKS}_${IDX}.jsonl \
         --num-chunks $CHUNKS \
         --chunk-idx $IDX \
@@ -54,5 +54,5 @@ done
 
 echo "Running TextVQA evaluation..." >> "$log_file"
 python -m llava.eval.eval_textvqa \
-    --annotation-file /scratch/Codebook/playground/data/eval/textvqa/TextVQA_0.5.1_val.json \
+    --annotation-file /mnt/data/jiaqi.liao/Codebook/playground/data/eval/textvqa/TextVQA_0.5.1_val.json \
     --result-file $output_file >> "$log_file" 2>&1

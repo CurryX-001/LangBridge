@@ -13,3 +13,9 @@ Codebook_weight
 ACL
 ACL/*
 llava_eval_part_ab
+eval_result/*
+eval_result
+playground
+playground/
+*.bin
+*.pt

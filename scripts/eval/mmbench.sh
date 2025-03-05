@@ -10,7 +10,7 @@ IFS=',' read -ra GPULIST <<< "$gpu_list"
 
 CHUNKS=${#GPULIST[@]}
 SPLIT="mmbench_dev_20230712"
-ROOT_DIR="/blob/v-jiaqiliao/Results/Codebook/eval/mmbench"
+ROOT_DIR="/mnt/data/jiaqi.liao/Codebook/eval_results/mmbench"
 
 # 创建日志文件路径并清除旧内容
 log_file="$ROOT_DIR/answers/$CKPT_NAME/eval.log"

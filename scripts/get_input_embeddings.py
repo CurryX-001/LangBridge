@@ -46,13 +46,13 @@ def process_embeddings(embedding_path: str, vocab_path: str, save_path: str) -> 
 
 if __name__ == "__main__":
     # 示例使用
-    model_name = "Qwen/Qwen2-7B-Instruct"
-    embedding_save_path = "/scratch/Codebook/Qwen2-7B-Instruct_embedding_matrix.pt"
+    model_name = "Qwen/Qwen2.5-14B-Instruct"
+    embedding_save_path = "/mnt/data/jiaqi.liao/Codebook/Qwen2.5-14B-Instruct_embedding_matrix.pt"
     
     # 获取嵌入矩阵
     get_model_embeddings(model_name, embedding_save_path)
     
     # 处理vocab和嵌入
-    vocab_path = "/scratch/Codebook/32000_Qwen_sub_llava_share_intersect_llama_qwen.json"
-    final_save_path = "/scratch/Codebook/Qwen2-7B-Instruct_embedding_matrix_32000.pt"
+    vocab_path = "/mnt/data/jiaqi.liao/Codebook/19200_Qwen_sub_llava_share_intersect_llama_qwen.json"
+    final_save_path = "/mnt/data/jiaqi.liao/Codebook/Qwen2.5-14B-Instruct_embedding_matrix_19200.pt"
     process_embeddings(embedding_save_path, vocab_path, final_save_path)

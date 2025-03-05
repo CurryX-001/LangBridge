@@ -4,7 +4,7 @@ set -x
 # 添加时间戳变量
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 # 创建日志目录
-LOG_DIR="./checkpoints/llama3_8b_finetune_vocab_19200_use_qwen2_pretrain"
+LOG_DIR="./checkpoints/qwen2_it_8b_it_vocab_12800_dim_1024_finetune_mmvocab_with_llama3_8b_it_vocab_12800_dim_1024_finetune"
 mkdir -p ${LOG_DIR}
 # 设置日志文件路径
 LOG_FILE="${LOG_DIR}/train_${TIMESTAMP}.log"
@@ -24,12 +24,12 @@ GRADIENT_ACC=$((BATCH_SIZE / PER_DEVICE_BATCH_SIZE / GPUS))
     
 torchrun --nnodes=1 --nproc_per_node=8 --master_addr=localhost --master_port=6105 llava/train/train_mem.py \
     --deepspeed scripts/zero3.json \
-    --model_name_or_path meta-llama/Meta-Llama-3-8B \
-    --version llama3 \
-    --data_path /scratch/Codebook/playground/data/llava_v1_5_mix665k_filtered.json \
-    --image_folder /scratch/Codebook/playground/data \
+    --model_name_or_path Qwen/Qwen2-7B-Instruct \
+    --version qwen_2 \
+    --data_path playground/data/llava_v1_5_mix665k_filtered.json \
+    --image_folder playground/data \
     --vision_tower openai/clip-vit-large-patch14-336 \
-    --pretrain_mm_mlp_adapter /scratch/Codebook/Codebook_weight/checkpoints/Qwen2-7B-pretrain-vocab-19200/mm_projector.bin \
+    --pretrain_mm_mlp_adapter /mnt/data/jiaqi.liao/Codebook/llama3_8b_it_vocab_12800_dim_1024_finetune_mm_projector.bin \
     --mm_projector_type mm_vocab \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
@@ -57,9 +57,9 @@ torchrun --nnodes=1 --nproc_per_node=8 --master_addr=localhost --master_port=610
     --dataloader_num_workers 4 \
     --lazy_preprocess True \
     --report_to tensorboard \
-    --mm_vocab_size 19200 \
-    --mlp_hidden_size 5120 \
-    --mm_vocab_matrix "/scratch/Codebook/Meta-Llama-3-8B-Instruct_embedding_matrix_19200.pt"
+    --mm_vocab_size 12800 \
+    --mlp_hidden_size 1024 \
+    --mm_vocab_matrix "/mnt/data/jiaqi.liao/Codebook/Qwen2-7B-Instruct_embedding_matrix_12800.pt"
 
     echo "结束训练时间: $(date)"
-} 2>&1 | tee ${LOG_FILE}
+} > "${LOG_FILE}" 2>&1 &

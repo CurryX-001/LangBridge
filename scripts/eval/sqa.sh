@@ -11,7 +11,7 @@ IFS=',' read -ra GPULIST <<< "$gpu_list"
 CHUNKS=${#GPULIST[@]}
 
 CKPT=$CKPT_NAME
-ROOT_DIR="/blob/v-jiaqiliao/Results/Codebook/eval/scienceqa"
+ROOT_DIR="/mnt/data/jiaqi.liao/Codebook/eval_results/scienceqa"
 
 # 创建日志目录和主日志文件
 log_file="$ROOT_DIR/answers/$CKPT/eval.log"

@@ -11,7 +11,7 @@ IFS=',' read -ra GPULIST <<< "$gpu_list"
 CHUNKS=${#GPULIST[@]}
 
 CKPT=$CKPT_NAME
-ROOT_DIR="/blob/v-jiaqiliao/Results/Codebook/eval/mm-vet"
+ROOT_DIR="/mnt/data/jiaqi.liao/Codebook/eval_results/mm-vet"
 
 # 创建日志文件路径并清除旧内容
 log_file="$ROOT_DIR/answers/$CKPT/eval.log"
