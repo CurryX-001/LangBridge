@@ -120,7 +120,7 @@ def eval_model(args):
                     max_new_tokens=1024,
                     use_cache=True)
 
-            outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
+            outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip().replace("<|endoftext|>", "")
 
             ans_id = shortuuid.uuid()
             ans_file.write(json.dumps({"question_id": idx,

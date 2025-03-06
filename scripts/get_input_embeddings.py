@@ -4,63 +4,55 @@ from transformers import (AutoModel, GenerationConfig, AutoTokenizer,LlamaForCau
 from transformers.modeling_outputs import CausalLMOutputWithPast
 from transformers.modeling_utils import PreTrainedModel
 from transformers.utils import ModelOutput, logging
-model = AutoModel.from_pretrained(
-    "/mnt/petrelfs/share_data/mfq/Qwen2-7B-Instruct",
-    trust_remote_code=True
-)
-tokenizer = AutoTokenizer.from_pretrained( "/mnt/petrelfs/share_data/wangwenhai/llm/Qwen2-7B-Instruct",trust_remote_code=True)
-embedding_matrix = model.get_input_embeddings().weight 
+import json
 
-# 将嵌入矩阵保存到文件，保存为 PyTorch 格式
-torch.save(embedding_matrix, "/mnt/petrelfs/mengfanqing/MM_vocab/embedding_matrix_llm/Qwen2-7B-Instruct_embedding_matrix.pt")
+# Part 1: 获取模型嵌入矩阵
+def get_model_embeddings(model_name: str, save_path: str) -> None:
+    """
+    获取预训练模型的嵌入矩阵并保存
+    """
+    model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+    embedding_matrix = model.get_input_embeddings().weight
+    torch.save(embedding_matrix, save_path)
+    print(f"嵌入矩阵已保存至: {save_path}")
 
-# import torch
-# import json
+# Part 2: 处理vocab和嵌入矩阵
+def process_embeddings(embedding_path: str, vocab_path: str, save_path: str) -> None:
+    """
+    根据vocab筛选并保存对应的嵌入向量
+    """
+    # 加载嵌入矩阵
+    embedding_matrix = torch.load(embedding_path)
+    if hasattr(embedding_matrix, 'weight'):
+        embedding_matrix = embedding_matrix.weight
+    
+    # 加载vocab数据
+    with open(vocab_path, 'r') as file:
+        vocab_data = json.load(file)
+    
+    # 获取并验证索引
+    indices = list(vocab_data.values())
+    max_index = embedding_matrix.size(0)
+    if max(indices) >= max_index:
+        raise ValueError(f"vocab索引超出范围，最大允许索引为{max_index-1}")
+    
+    # 选择对应的嵌入向量
+    indices_tensor = torch.tensor(indices, dtype=torch.long)
+    mm_vocab = torch.index_select(embedding_matrix, 0, indices_tensor)
+    
+    # 保存结果
+    torch.save(mm_vocab, save_path)
+    print(f"处理后的vocab嵌入向量已保存至: {save_path}")
 
-# # 定义路径
-# embedding_matrix_path = "/mnt/petrelfs/mengfanqing/MM_vocab/embedding_matrix_llm/Qwen2-7B-Instruct_embedding_matrix.pt"
-# vocab_json_path = "/mnt/petrelfs/mengfanqing/MM_vocab/embedding_matrix_vocab_19200/19200_Qwen_sub_llava_share_intersect_llama_qwen.json"
-# save_path = "/mnt/petrelfs/mengfanqing/MM_vocab/embedding_matrix_vocab_19200/Qwen2-7B-Instruct_embedding_matrix_19200.pt"
-
-# # 加载嵌入矩阵（需要检查是否是状态字典或模型，按需加载）
-# embedding_matrix = torch.load(embedding_matrix_path)
-
-# # 如果加载的是模型或状态字典，则直接访问权重
-# if hasattr(embedding_matrix, 'weight'):
-#     embedding_matrix = embedding_matrix.weight
-
-# # 加载vocab数据
-# with open(vocab_json_path, 'r') as file:
-#     vocab_data = json.load(file)
-
-# # 获取vocab数据中的索引
-# indices = list(vocab_data.values())
-
-# # 确保索引有效且不超出嵌入矩阵的范围
-# max_index = embedding_matrix.size(0)
-# if max(indices) >= max_index:
-#     raise ValueError("某些vocab索引超出了嵌入矩阵的维度范围。")
-
-# # 将索引转换为tensor，并确保是正确的数据类型
-# indices_tensor = torch.tensor(indices, dtype=torch.long)
-
-# # 从嵌入矩阵中选择相应的vocab嵌入
-# mm_vocab = torch.index_select(embedding_matrix, 0, indices_tensor)
-
-# # 保存筛选后的mm_vocab到指定路径
-# torch.save(mm_vocab, "/mnt/petrelfs/mengfanqing/MM_vocab/embedding_matrix_vocab_19200/Qwen2-7B-Instruct_embedding_matrix_19200.pt")
-# # /mnt/petrelfs/mengfanqing/MM_vocab/embedding_matrix_vocab_19200/Qwen2-7B-Instruct_embedding_matrix_vocab_19200.pt
-# print(f"筛选后的mm_vocab已保存到 {save_path}")
-
-
-
-# from transformers import AutoTokenizer
-
-# # 加载LLaMA3的tokenizer
-# model_name = '/mnt/petrelfs/share_data/wangwenhai/llm/Meta-Llama-3-8B-Instruct'
-# tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-# # 查看eos_token
-# print("EOS Token:", tokenizer.eos_token)
-# print("EOS Token ID:", tokenizer.eos_token_id)
-# print("PAD Token:", tokenizer.pad_token)
+if __name__ == "__main__":
+    # 示例使用
+    model_name = "Qwen/Qwen2.5-14B-Instruct"
+    embedding_save_path = "/mnt/data/jiaqi.liao/Codebook/Qwen2.5-14B-Instruct_embedding_matrix.pt"
+    
+    # 获取嵌入矩阵
+    get_model_embeddings(model_name, embedding_save_path)
+    
+    # 处理vocab和嵌入
+    vocab_path = "/mnt/data/jiaqi.liao/Codebook/19200_Qwen_sub_llava_share_intersect_llama_qwen.json"
+    final_save_path = "/mnt/data/jiaqi.liao/Codebook/Qwen2.5-14B-Instruct_embedding_matrix_19200.pt"
+    process_embeddings(embedding_save_path, vocab_path, final_save_path)
