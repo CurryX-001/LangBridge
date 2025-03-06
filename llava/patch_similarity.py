@@ -7,30 +7,40 @@ import os
 def compute_least_squares_representation(
     image_features: torch.Tensor,
     vocab_embeddings: torch.Tensor,
-) -> tuple[torch.Tensor, float]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
   
     vocab_embeddings = vocab_embeddings.to(dtype=torch.float32)
     image_features = image_features.to(dtype=torch.float32)
 
-    # 计算最小二乘解: coefficients 是形状 [N, V] 的权重
-    coefficients = torch.linalg.lstsq(vocab_embeddings.T, image_features.T).solution.T  # [N, V]
-
-    # 使用 coefficients 线性组合 vocab_embeddings 重建 image_features
-    reconstructed_features = torch.mm(coefficients, vocab_embeddings)  # [N, D]
-
-    # 计算 MSE 误差
-    reconstruction_loss = F.mse_loss(image_features, reconstructed_features).item()
-
-        # 计算最大误差
-    max_error = (image_features - reconstructed_features).abs().max().item()
-    print(f"Max Absolute Error: {max_error}")
-
     # 计算余弦相似度
-    cosine_similarity = F.cosine_similarity(image_features, reconstructed_features, dim=1).mean().item()
-    print(f"Mean Cosine Similarity: {cosine_similarity}")
-    
+    image_features_norm = F.normalize(image_features, dim=1)
+    vocab_embeddings_norm = F.normalize(vocab_embeddings, dim=1)
+    similarity = torch.mm(image_features_norm, vocab_embeddings_norm.t())
 
-    return coefficients, reconstruction_loss
+    # 选择前2个最相似的词表嵌入
+    top_k = 2
+    top_indices = torch.topk(similarity, top_k, dim=1).indices
+
+    # 根据最相似的词表嵌入计算最小二乘解
+    selected_vocab_embeddings = vocab_embeddings[top_indices]
+    coefficients = []
+    mse_losses = []
+    for i in range(image_features.size(0)):
+        selected_embeddings = selected_vocab_embeddings[i].T
+        coeff = torch.linalg.lstsq(selected_embeddings, image_features[i].unsqueeze(1)).solution.T
+        coefficients.append(coeff)
+        
+        # 使用 coefficients 线性组合 selected_vocab_embeddings 重建 image_features
+        reconstructed_feature = torch.mm(coeff, selected_embeddings.T)
+        
+        # 计算每个 patch 的 MSE 误差
+        mse_loss = F.mse_loss(image_features[i], reconstructed_feature).item()
+        mse_losses.append(mse_loss)
+    
+    coefficients = torch.cat(coefficients, dim=0)
+    mse_losses = torch.tensor(mse_losses)
+
+    return coefficients, mse_losses, top_indices
     
 
 def analyze_patch_similarity(
@@ -39,7 +49,7 @@ def analyze_patch_similarity(
     image_path: str,
     tokenizer,
     output_file: str = None,
-) -> tuple[torch.Tensor, float]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     分析图像patch的词表表示系数和相似度
     
@@ -67,7 +77,7 @@ def analyze_patch_similarity(
     vocab_embeddings = model.get_model().embed_tokens.weight.to(device=image_features.device)
     
     # 计算最小二乘表示
-    representation_coefficients, loss = compute_least_squares_representation(image_features, vocab_embeddings)
+    representation_coefficients, mse_losses, top_indices = compute_least_squares_representation(image_features, vocab_embeddings)
     
     # 计算余弦相似度
     image_features_norm = F.normalize(image_features, dim=1)
@@ -82,11 +92,17 @@ def analyze_patch_similarity(
     for patch_idx in range(representation_coefficients.shape[0]):
         output_lines.append(f"\n=== Patch {patch_idx} 分析 ===")
         
+        # 使用 compute_least_squares_representation 中的 top_indices
+        top_indices_patch = top_indices[patch_idx]
+        output_lines.append(f"Patch {patch_idx} Top Indices: {top_indices_patch.tolist()}")
+        
         # 最小二乘系数的top-k
         coeffs = representation_coefficients[patch_idx]
-        top_values, top_indices = torch.topk(coeffs, top_k)
-        output_lines.append(f"\n最小二乘法 Top {top_k} 系数:")
-        for value, idx in zip(top_values, top_indices):
+        # 确保 top_k 不超过 coeffs 的大小
+        actual_top_k = min(top_k, coeffs.size(0))
+        top_values, top_indices_patch = coeffs, top_indices_patch
+        output_lines.append(f"\n最小二乘法 Top {actual_top_k} 系数:")
+        for value, idx in zip(top_values, top_indices_patch):
             token = tokenizer.decode([idx])
             output_lines.append(f"Token: {token}, 系数: {value:.4f}")
         
@@ -96,8 +112,11 @@ def analyze_patch_similarity(
         for value, idx in zip(sim_values, sim_indices):
             token = tokenizer.decode([idx])
             output_lines.append(f"Token: {token}, 相似度: {value:.4f}")
+        
+        # 输出每个 patch 的 MSE 误差
+        output_lines.append(f"Patch {patch_idx} MSE Loss: {mse_losses[patch_idx]:.6f}")
     
-    output_lines.append(f"\n总重建损失: {loss:.6f}")
+    output_lines.append(f"\n总重建损失: {mse_losses.sum():.6f}")
     
     # 将结果写入文件或打印到控制台
     output_text = '\n'.join(output_lines)
@@ -107,7 +126,7 @@ def analyze_patch_similarity(
     else:
         print(output_text)
     
-    return representation_coefficients, loss
+    return representation_coefficients, mse_losses, top_indices
 
 if __name__ == "__main__":
     import argparse
@@ -126,7 +145,7 @@ if __name__ == "__main__":
     print(model)
     
     # 计算相似度
-    coefficients, loss = analyze_patch_similarity(
+    coefficients, mse_losses, top_indices = analyze_patch_similarity(
         model,
         image_processor,
         args.image_path,
