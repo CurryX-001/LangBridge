@@ -13,7 +13,7 @@ CHUNKS=${#GPULIST[@]}
 CKPT=$CKPT_NAME
 ROOT_DIR="/mnt/data/jiaqi.liao/Codebook/eval_results/scienceqa"
 
-# 创建日志目录和主日志文件
+# Create log directory and main log file
 log_file="$ROOT_DIR/answers/$CKPT/eval.log"
 mkdir -p $(dirname $log_file)
 > "$log_file"
@@ -22,7 +22,7 @@ echo "Starting ScienceQA evaluation with $CHUNKS GPU(s)" > "$log_file"
 echo "Using GPU(s): $gpu_list" >> "$log_file"
 
 for IDX in $(seq 0 $((CHUNKS-1))); do
-    # 为每个GPU创建单独的日志文件
+    # Create separate log file for each GPU
     gpu_log_file="$ROOT_DIR/answers/$CKPT/gpu_${GPULIST[$IDX]}.log"
     > "$gpu_log_file"
     echo "Starting evaluation on GPU ${GPULIST[$IDX]} (Chunk $((IDX+1))/$CHUNKS)" >> "$gpu_log_file"
@@ -45,10 +45,10 @@ wait
 output_file="$ROOT_DIR/answers/$CKPT/merge.jsonl"
 echo "Merging results into $output_file" >> "$log_file"
 
-# 清除输出文件
+# Clear output file
 > "$output_file"
 
-# 合并所有分片结果
+# Merge all chunk results
 for IDX in $(seq 0 $((CHUNKS-1))); do
     cat $ROOT_DIR/answers/$CKPT/${CHUNKS}_${IDX}.jsonl >> "$output_file"
 done

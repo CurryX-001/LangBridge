@@ -1,29 +1,13 @@
 #!/bin/bash
 
 CKPT_PATH_list=(
-"/mnt/data/jiaqi.liao/Codebook/checkpoints/llama3_it_8b_it_vocab_12800_dim_1024_finetune_mmvocab_with_qwen_0.5b_it_vocab_12800_dim_1024_finetuned_mlp"
-"/mnt/data/jiaqi.liao/Codebook/checkpoints/llama3_it_8b_it_vocab_12800_dim_1024_finetune_mmvocab_with_qwen_0.5b_it_vocab_12800_dim_1024_pretrained_mlp"
-"/mnt/data/jiaqi.liao/Codebook/checkpoints/qwen2_it_8b_it_vocab_12800_dim_1024_finetune_mmvocab_with_llama3_8b_it_vocab_12800_dim_1024_finetune"
-"/mnt/data/jiaqi.liao/Codebook/checkpoints/qwen2_it_8b_it_vocab_12800_dim_1024_finetune_mmvocab_with_llama3_8b_it_vocab_12800_dim_1024_pretrain"
-"/mnt/data/jiaqi.liao/Codebook/checkpoints/qwen2_it_8b_it_vocab_12800_dim_1024_finetune_mmvocab_with_qwen_0.5b_it_vocab_12800_dim_1024_finetuned_mlp"
-"/mnt/data/jiaqi.liao/Codebook/checkpoints/qwen2_it_8b_it_vocab_12800_dim_1024_finetune_mmvocab_with_qwen_0.5b_it_vocab_12800_dim_1024_pretrain"
-"/mnt/data/jiaqi.liao/Codebook/checkpoints/qwen2.5_it_7b_it_vocab_12800_dim_1024_finetune_mmvocab_with_llama3_8b_it_vocab_12800_dim_1024_finetune"
-"/mnt/data/jiaqi.liao/Codebook/checkpoints/qwen2.5_it_7b_it_vocab_12800_dim_1024_finetune_mmvocab_with_llama3_8b_it_vocab_12800_dim_1024_pretrain"
-"/mnt/data/jiaqi.liao/Codebook/checkpoints/qwen2.5_it_7b_it_vocab_12800_dim_1024_finetune_mmvocab_with_qwen_0.5b_it_vocab_12800_dim_1024_finetuned_mlp"
-"/mnt/data/jiaqi.liao/Codebook/checkpoints/qwen2.5_it_7b_it_vocab_12800_dim_1024_finetune_mmvocab_with_qwen_0.5b_it_vocab_12800_dim_1024_pretrained_mlp"
+    "./checkpoints/llama3_it_8b_it_vocab_19200_dim_5120_finetune_mmvocab"
+    "./checkpoints/qwen2_0.5b_it_vocab_19200_dim_5120_finetune_mmvocab"
 )
 
 conv_mode_list=(
     "llama3"
-    "llama3"
-    "qwen_2"
-    "qwen_2"
-    "qwen_2"
-    "qwen_2"
-    "qwen_2"
-    "qwen_2"
-    "qwen_2"
-    "qwen_2"    
+    "qwen_2"  
 )
 
 eval_dataset_list=(
@@ -47,10 +31,10 @@ for i in "${!CKPT_PATH_list[@]}"; do
     
     CKPT_NAME=$(basename "$CKPT_PATH")
     
-    # 获取当前检查点对应的数据集列表
+    # Get dataset list corresponding to current checkpoint
     eval "datasets=(${eval_dataset_list[$i]})"
     
-    # 遍历当前检查点的数据集列表
+    # Iterate through dataset list for current checkpoint
     for dataset in "${datasets[@]}"; do
         case $dataset in
             "mme")

@@ -826,7 +826,7 @@ class LazySupervisedDataset(Dataset):
                 print(f"Error loading item {i}, attempt {retry_count}/{max_retries}: {str(e)}")
                 if retry_count == max_retries:
                     raise e
-                # 随机选择新的索引重试
+                # Randomly select new index for retry
                 i = random.randint(0, len(self.list_data_dict) - 1)
 
 @dataclass

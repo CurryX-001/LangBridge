@@ -15,18 +15,18 @@ SPLIT="llava_gqa_testdev_balanced"
 GQADIR="./playground/data/eval/gqa/data"
 ROOT_DIR="/mnt/data/jiaqi.liao/Codebook/eval_results/gqa"
 
-# 创建日志文件路径并清除旧内容
+# Create log file path and clear old content
 log_file="$ROOT_DIR/answers/$SPLIT/$CKPT/eval.log"
 mkdir -p $(dirname $log_file)
-> "$log_file"  # 清除日志文件内容
+> "$log_file"  # Clear log file content
 
 echo "Starting GQA evaluation with $CHUNKS GPU(s)" > "$log_file"
 echo "Using GPU(s): $gpu_list" >> "$log_file"
 
 for IDX in $(seq 0 $((CHUNKS-1))); do
-    # 为每个GPU创建单独的日志文件并清除旧内容
+    # Create separate log file for each GPU and clear old content
     gpu_log_file="$ROOT_DIR/answers/$SPLIT/$CKPT/gpu_${GPULIST[$IDX]}.log"
-    > "$gpu_log_file"  # 清除GPU特定的日志文件内容
+    > "$gpu_log_file"  # Clear GPU-specific log file content
     echo "Starting evaluation on GPU ${GPULIST[$IDX]} (Chunk $((IDX+1))/$CHUNKS)" >> "$gpu_log_file"
     
     CUDA_VISIBLE_DEVICES=${GPULIST[$IDX]} python -m llava.eval.model_vqa_loader \

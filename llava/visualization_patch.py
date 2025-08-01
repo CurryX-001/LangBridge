@@ -19,94 +19,94 @@ def visualize_patch_tokens(
     vis_ratio: float = 1.0,
 ) -> Image.Image:
     """
-    将每个patch对应的最相似token直接可视化在原始图像上
+    Visualize the most similar tokens for each patch directly on the original image
     
-    参数:
-        image: 原始PIL图像
-        image_features: 视觉特征 [num_patches, hidden_dim]
-        vocab_embeddings: 词表嵌入 [vocab_size, hidden_dim]
-        tokenizer: 分词器
-        output_path: 输出图像路径
-        top_k: 每个patch显示的token数量
-        font_size: 文字大小
-        text_color: 文字颜色
-        outline_color: 文字轮廓颜色
-        vis_ratio: 可视化图像的缩放比例
+    Args:
+        image: Original PIL image
+        image_features: Visual features [num_patches, hidden_dim]
+        vocab_embeddings: Vocabulary embeddings [vocab_size, hidden_dim]
+        tokenizer: Tokenizer
+        output_path: Output image path
+        top_k: Number of tokens to display for each patch
+        font_size: Font size
+        text_color: Text color
+        outline_color: Text outline color
+        vis_ratio: Scaling ratio for visualization image
     
-    返回:
-        标注了token的图像
+    Returns:
+        Image annotated with tokens
     """
-    # 调整图像大小，保持宽高比
+    # Resize image while maintaining aspect ratio
     new_width = int(image.width * vis_ratio)
     new_height = int(image.height * vis_ratio)
     image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
     
-    # 确保数据类型匹配
+    # Ensure data type consistency
     vocab_embeddings = vocab_embeddings.to(dtype=image_features.dtype)
     
-    # 计算patch大小和网格尺寸
+    # Calculate patch size and grid dimensions
     num_patches = image_features.shape[0]
     grid_size = int(np.sqrt(num_patches))
     patch_width = new_width // grid_size
     patch_height = new_height // grid_size
     
-    # 计算相似度并获取top-k tokens
+    # Calculate similarity and get top-k tokens
     image_features_norm = F.normalize(image_features, dim=1)
     vocab_embeddings_norm = F.normalize(vocab_embeddings, dim=1)
     similarity = torch.mm(image_features_norm, vocab_embeddings_norm.t())
     top_k_values, top_k_indices = torch.topk(similarity, k=top_k, dim=1)
     
-    # 创建可绘制的图像副本
+    # Create drawable image copy
     draw_image = image.copy()
     draw = ImageDraw.Draw(draw_image)
     
-    # 尝试加载字体，如果失败则使用默认字体
+    # Try to load font, use default font if failed
     try:
-        # 对于Linux系统
+        # For Linux systems
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
     except:
         try:
-            # 对于Windows系统
+            # For Windows systems
             font = ImageFont.truetype("arial.ttf", font_size)
         except:
             font = ImageFont.load_default()
     
-    # 在每个patch上绘制对应的tokens
+    # Draw corresponding tokens on each patch
     for i in range(num_patches):
         row = i // grid_size
         col = i % grid_size
         x = col * patch_width
         y = row * patch_height
         
-        # 获取当前patch的top-k tokens
+        # Get top-k tokens for current patch
         tokens = []
         for idx in top_k_indices[i]:
             token = tokenizer.decode(idx.item()).strip()
             tokens.append(token)
         
-        # 将tokens合并成一个字符串
+        # Merge tokens into a single string
         text = "\n".join(tokens)
         
-        # 计算文本边界框
+        # Calculate text bounding box
         bbox = draw.textbbox((x, y), text, font=font)
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
         
-        # 计算文本居中位置
+        # Calculate centered text position
         text_x = x + (patch_width - text_width) // 2
         text_y = y + (patch_height - text_height) // 2
         
-        # 绘制文本轮廓
+        # Draw text outline
         for dx, dy in [(-1,-1), (-1,1), (1,-1), (1,1)]:
             draw.text((text_x+dx, text_y+dy), text, font=font, fill=outline_color)
         
-        # 绘制文本
+        # Draw text
         draw.text((text_x, text_y), text, font=font, fill=text_color)
         
-        # 可选：绘制patch边界
+        # Optional: draw patch boundaries
         draw.rectangle([x, y, x+patch_width, y+patch_height], outline="red", width=1)
     
-    # 保存结果
+    # Save result
     draw_image.save(output_path)
     return draw_image
 
@@ -120,9 +120,9 @@ def analyze_image_patches(
     vis_ratio: float = 1.0,
 ) -> None:
     """
-    分析图像的patch-token对应关系并生成可视化结果
+    Analyze patch-token correspondence of image and generate visualization results
     """
-    # 获取处理后的图像
+    # Get processed image
     image = Image.open(image_path).convert('RGB')
     processed_tensor = process_images([image], image_processor, model.config)[0]
 
@@ -142,7 +142,7 @@ def analyze_image_patches(
 
     expanded_image = expand2square(image, tuple(int(x*255) for x in image_processor.image_mean))
     
-    # 将处理后的tensor转换回PIL图像用于可视化
+    # Convert processed tensor back to PIL image for visualization
     
     with torch.inference_mode():
         image_features = model.get_vision_tower()(
@@ -153,7 +153,7 @@ def analyze_image_patches(
     
     vocab_embeddings = model.get_model().embed_tokens.weight.to(device=image_features.device)
     
-    # 使用处理后的图像进行可视化
+    # Use processed image for visualization
     visualize_patch_tokens(
         expanded_image,
         image_features,
@@ -169,20 +169,20 @@ if __name__ == "__main__":
     from llava.model.builder import load_pretrained_model
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-path", type=str, required=True, help="LLaVA模型路径")
-    parser.add_argument("--image-path", type=str, required=True, help="输入图像路径")
-    parser.add_argument("--output-path", type=str, required=True, help="输出图像路径")
-    parser.add_argument("--top-k", type=int, default=1, help="每个patch显示的token数量")
-    parser.add_argument("--font-size", type=int, default=10, help="文字大小")
-    parser.add_argument("--vis-ratio", type=float, default=1.0, help="可视化图像缩放比例")
+    parser.add_argument("--model-path", type=str, required=True, help="LLaVA model path")
+    parser.add_argument("--image-path", type=str, required=True, help="Input image path")
+    parser.add_argument("--output-path", type=str, required=True, help="Output image path")
+    parser.add_argument("--top-k", type=int, default=1, help="Number of tokens to display for each patch")
+    parser.add_argument("--font-size", type=int, default=10, help="Font size")
+    parser.add_argument("--vis-ratio", type=float, default=1.0, help="Visualization image scaling ratio")
     args = parser.parse_args()
     
-    # 加载模型
+    # Load model
     model_path = os.path.expanduser(args.model_path)
     model_name = get_model_name_from_path(model_path)
     tokenizer, model, image_processor, _ = load_pretrained_model(model_path, None, model_name)
     
-    # 分析图像
+    # Analyze image
     analyze_image_patches(
         model,
         image_processor,
