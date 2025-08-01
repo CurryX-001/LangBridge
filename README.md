@@ -37,7 +37,7 @@ pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.6.
 
 ## 📊 Data Preparation
 
-### 1. Download the Image Pretraining Data and Visual Instruction Tuning Data and Evaluation Data
+### 1. Download the Pretraining Data and Visual Instruction Tuning Data, and Evaluation Data
 
 Download the annotation file for final mixture instruction tuning data [llava_v1_5_mix665k.json](https://huggingface.co/datasets/liuhaotian/LLaVA-Instruct-150K/resolve/main/llava_v1_5_mix665k.json), and download the images from constituting datasets:
 
@@ -135,7 +135,7 @@ Evaluate trained models across multiple benchmarks:
 bash scripts/evaluate_all.sh
 ```
 
-For LLaVA-Next specific traning and evaluation protocols, refer to `./LLaVA-NeXT/Instruction.md`.
+For LLaVA-Next specific training and evaluation protocols, refer to `./LLaVA-NeXT/Instruction.md`.
 
 ## 🏆 Models
 
