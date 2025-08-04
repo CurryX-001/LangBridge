@@ -160,3 +160,7 @@ Pre-trained models are available for download:
 ## 📧 Contact
 
 For questions, please open an issue or contact: [godubnation7@gmail.com](mailto:godubnation7@gmail.com)
+
+## Acknowledgement
+
+LangBridge is built on [LlaVA](https://github.com/haotian-liu/LLaVA), [LlaVA-NeXT](https://github.com/LLaVA-VL/LLaVA-NeXT), and [lmms-eval](https://github.com/EvolvingLMMs-Lab/lmms-eval). We thank the authors for their excellent work and open-source contributions.
