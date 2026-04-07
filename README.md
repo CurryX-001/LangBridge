@@ -2,7 +2,7 @@
 
 Official implementation of the paper "LangBridge: Interpreting Image as a Combination of Language Embeddings" accepted at **ICCV 2025**.
 
-[**Paper**](https://arxiv.org/abs/2503.12271) | [**Project Page**](hhttps://curryx-001.github.io/LangBridge.github.io/) | [**Models**](#-models)
+[**Paper**](https://arxiv.org/abs/2503.19404) | [**Project Page**](hhttps://curryx-001.github.io/LangBridge.github.io/) | [**Models**](#-models)
 
 ## 🔥 News
 
